@@ -1,7 +1,8 @@
+import { DIRECTUS_CONSTANTS } from "@/utils/constant";
 import axios from "axios";
 
 const fetcher = axios.create({
-  baseURL: "https://5ru1zdqh.directus.app",
+  baseURL: DIRECTUS_CONSTANTS.BASE_URL,
 });
 
 export default fetcher;

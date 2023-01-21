@@ -1,4 +1,5 @@
 import Layout from "@/components/Layout";
+import User from "@/components/User";
 import { getPost, Post as PostType } from "@/modules/posts/api";
 import { GetServerSideProps, InferGetServerSidePropsType } from "next";
 import { useRouter } from "next/router";
@@ -55,23 +56,12 @@ export default function PostDetailPage({
       <article className="mt-8">
         <h1 className="text-4xl font-bold">{post.title}</h1>
         <div className="flex items-center w-full mt-4">
-          <div className="flex items-center">
-            <div className="avatar">
-              <div className="w-10 rounded-full ring ring-accent">
-                <img
-                  src={`https://5ru1zdqh.directus.app/assets/${post.author.avatar}`}
-                  alt="..."
-                />
-              </div>
-            </div>
-
-            <div className="flex flex-col ml-4">
-              <span className="font-bold">{post.author.first_name}</span>
-              <span className="text-sm text-neutral-content">
-                {post.author.email}
-              </span>
-            </div>
-          </div>
+          <User
+            avatar={post.author.avatar}
+            email={post.author.email}
+            name={post.author.first_name}
+            avatarClassName="ring ring-accent"
+          />
 
           <div className="flex items-center ml-auto">
             <span className="text-sm text-neutral-content">
