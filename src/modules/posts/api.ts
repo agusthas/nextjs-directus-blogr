@@ -11,7 +11,7 @@ export const getPosts = async () => {
       fields: ["*.*"],
     },
   });
-  const data = createResponseSchemaFor(PostSchema).parse(response.data);
+  const data = createResponseSchemaFor(PostSchema.array()).parse(response.data);
   return data.data;
 };
 
