@@ -27,4 +27,7 @@ export const CreatePostDataSchema = z.object({
   status: z.enum(["published", "draft"]).default("published"),
 });
 
+export const EditPostDataSchema = CreatePostDataSchema.partial();
+
 export type CreatePostData = z.infer<typeof CreatePostDataSchema>;
+export type EditPostData = z.infer<typeof EditPostDataSchema>;

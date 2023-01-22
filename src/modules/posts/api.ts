@@ -1,7 +1,13 @@
 import fetcher from "@/lib/fetcher";
 import { z } from "zod";
 import { createResponseSchemaFor } from "../helper";
-import { CreatePostData, CreatePostDataSchema, PostSchema } from "./schema";
+import {
+  CreatePostData,
+  CreatePostDataSchema,
+  EditPostData,
+  EditPostDataSchema,
+  PostSchema,
+} from "./schema";
 
 export type Post = z.infer<typeof PostSchema>;
 
@@ -28,6 +34,25 @@ export const getPost = async (id: string) => {
 export const createPost = async (data: CreatePostData, accessToken: string) => {
   const body = CreatePostDataSchema.parse(data);
   const response = await fetcher.post("/items/posts", body, {
+    headers: {
+      Authorization: "Bearer " + accessToken,
+    },
+    params: {
+      fields: ["*.*"],
+    },
+  });
+
+  const post = createResponseSchemaFor(PostSchema).parse(response.data);
+  return post.data;
+};
+
+export const editPost = async (
+  id: string,
+  data: EditPostData,
+  accessToken: string
+) => {
+  const body = EditPostDataSchema.parse(data);
+  const response = await fetcher.patch(`/items/posts/${id}`, body, {
     headers: {
       Authorization: "Bearer " + accessToken,
     },
