@@ -1,16 +1,32 @@
 import { LoginUserSchema } from "@/modules/auth/schema";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { GetServerSideProps, InferGetServerSidePropsType } from "next";
+import { unstable_getServerSession } from "next-auth";
 import { getCsrfToken, signIn } from "next-auth/react";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { useState } from "react";
 import { SubmitHandler, useForm } from "react-hook-form";
 import { z } from "zod";
+import { authOptions } from "./api/auth/[...nextauth]";
 
 export const getServerSideProps: GetServerSideProps<{
   csrfToken: string | undefined;
 }> = async (context) => {
+  const session = await unstable_getServerSession(
+    context.req,
+    context.res,
+    authOptions
+  );
+
+  if (session) {
+    return {
+      redirect: {
+        destination: "/",
+        permanent: false,
+      },
+    };
+  }
   return {
     props: {
       csrfToken: await getCsrfToken(context),
@@ -26,7 +42,6 @@ export default function LoginPage({
   csrfToken,
 }: InferGetServerSidePropsType<typeof getServerSideProps>) {
   const router = useRouter();
-
   const [isLoading, setIsLoading] = useState(false);
 
   const {
@@ -44,7 +59,6 @@ export default function LoginPage({
         redirect: false,
         email: data.email,
         password: data.password,
-        callbackUrl: `/`,
       });
 
       if (response?.error) {

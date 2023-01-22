@@ -44,3 +44,21 @@ export const loginUser = async (input: LoginUser) => {
     return null;
   }
 };
+
+export const refreshAccessToken = async (refresh_token: string) => {
+  try {
+    const response = await fetcher.post("/auth/refresh", {
+      refresh_token,
+      mode: "json",
+    });
+    if (!response.data) {
+      throw new Error("No data returned");
+    }
+
+    const data = createResponseSchemaFor(TokenSchema).parse(response.data);
+    return data.data;
+  } catch (error) {
+    console.error(error);
+    return null;
+  }
+};

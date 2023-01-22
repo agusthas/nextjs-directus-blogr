@@ -19,9 +19,12 @@ export const PostSchema = z.object({
     avatar: z.string().nullable(),
   }),
 });
-export const GetPostsSchema = z.object({
-  data: PostSchema.array(),
+
+export const CreatePostDataSchema = z.object({
+  title: z.string(),
+  content: z.string(),
+  read_time: z.number(),
+  status: z.enum(["published", "draft"]).default("published"),
 });
-export const GetPostSchema = z.object({
-  data: PostSchema,
-});
+
+export type CreatePostData = z.infer<typeof CreatePostDataSchema>;

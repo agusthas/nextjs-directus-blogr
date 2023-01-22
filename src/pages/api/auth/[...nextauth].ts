@@ -1,12 +1,41 @@
-import { loginUser } from "@/modules/auth/api";
+import { loginUser, refreshAccessToken } from "@/modules/auth/api";
 import { LoginUserSchema } from "@/modules/auth/schema";
 import { getMe } from "@/modules/users/api";
+import { formatDate, formatDateTime } from "@/utils/date";
 import { NextApiRequest, NextApiResponse } from "next";
 import type { NextAuthOptions } from "next-auth";
 import NextAuth from "next-auth";
+import { JWT } from "next-auth/jwt";
 import CredentialsProvider from "next-auth/providers/credentials";
 
-const options: NextAuthOptions = {
+async function handleRefreshToken(jwtToken: JWT): Promise<JWT> {
+  try {
+    if (!jwtToken.refreshToken) {
+      throw new Error("No refresh token");
+    }
+
+    const res = await refreshAccessToken(jwtToken.refreshToken);
+    if (!res) {
+      throw new Error("No response");
+    }
+
+    return {
+      ...jwtToken,
+      accessToken: res.access_token,
+      refreshToken: res.refresh_token,
+      accessTokenExpiry: Date.now() + res.expires!,
+      error: null,
+    };
+  } catch (error) {
+    console.error(error);
+    return {
+      ...jwtToken,
+      error: "RefreshAccessTokenError",
+    };
+  }
+}
+
+export const authOptions: NextAuthOptions = {
   secret: "SUPER_SECRET_JWT_SECRET", // TODO: Replace with env variable
   providers: [
     CredentialsProvider({
@@ -45,10 +74,9 @@ const options: NextAuthOptions = {
           name: `${user.first_name} ${user.last_name}`,
           email: user.email,
           image: user.avatar,
-          token: {
-            accessToken: res.access_token,
-            refreshToken: res.refresh_token,
-          },
+          accessToken: res.access_token,
+          refreshToken: res.refresh_token,
+          accessTokenExpiry: Date.now() + res.expires!,
         };
       },
     }),
@@ -58,13 +86,30 @@ const options: NextAuthOptions = {
   },
   callbacks: {
     async jwt({ token, user }) {
-      if (user && user.token) {
+      if (user) {
         token.email = user.email;
-        token.accessToken = user.token.accessToken;
-        token.refreshToken = user.token.refreshToken;
+        token.accessToken = user.accessToken;
+        token.refreshToken = user.refreshToken;
+        token.accessTokenExpiry = user.accessTokenExpiry;
       }
 
-      return token;
+      if (
+        token &&
+        token.accessTokenExpiry &&
+        Date.now() < token.accessTokenExpiry
+      ) {
+        const now = formatDateTime(new Date().toISOString());
+        const expiredAt = formatDateTime(
+          new Date(token.accessTokenExpiry).toISOString()
+        );
+        console.log(
+          `AccessToken is still valid until ${expiredAt} (issed at: ${now})`
+        );
+
+        return token;
+      }
+
+      return handleRefreshToken(token);
     },
 
     async session({ session, token }) {
@@ -72,10 +117,12 @@ const options: NextAuthOptions = {
         session.user.id = token.sub || session.user.id;
         session.user.email = token.email;
         session.user.avatar = token.picture;
-        session.user.token = {
-          accessToken: token.accessToken,
-          refreshToken: token.refreshToken,
-        };
+        session.user.accessToken = token.accessToken;
+        session.user.refreshToken = token.refreshToken;
+        session.user.accessTokenExpiry = token.accessTokenExpiry;
+        if (token.error) {
+          session.error = token.error;
+        }
       }
       return session;
     },
@@ -86,5 +133,5 @@ const options: NextAuthOptions = {
 };
 
 export default function Auth(req: NextApiRequest, res: NextApiResponse) {
-  return NextAuth(req, res, options);
+  return NextAuth(req, res, authOptions);
 }
